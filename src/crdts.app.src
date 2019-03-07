@@ -1,0 +1,15 @@
+{application, crdts,
+ [{description, "An Erlang library for CRDTs"},
+  {vsn, "0.0.1"},
+  {registered, []},
+  {mod, {crdts_app, []}},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+ ]}.
