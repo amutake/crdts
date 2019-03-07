@@ -12,7 +12,7 @@ eunit:
 	rebar3 eunit
 
 ct:
-	rebar3 ct
+	rebar3 ct --readable=false # see https://github.com/erlang/rebar3/issues/1778
 
 dialyzer:
 	rebar3 dialyzer
