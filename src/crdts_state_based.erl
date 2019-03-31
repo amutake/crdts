@@ -8,7 +8,7 @@
 -behaviour(gen_server).
 
 %% gen_server callback APIs
--export([init/1, handle_cast/2, handle_call/3, handle_info/2]).
+-export([init/1, handle_cast/2, handle_call/3, handle_info/2, code_change/3, terminate/2]).
 
 %% Exported APIs
 -export([start_link/4, query/2, update/2, merge/2, join/2]).
@@ -96,6 +96,11 @@ handle_info(broadcast, State = #?STATE{interval = Interval, payload = Payload, n
     ok = lists:foreach(fun (P) -> ?MODULE:merge(P, Payload) end, gb_sets:to_list(Neighbors)),
     erlang:send_after(Interval, self(), broadcast),
     {noreply, State#?STATE{last_payload = Payload}}.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+terminate(_Reason, _State) -> ok.
 
 %%====================================================================
 %% Internal functions
