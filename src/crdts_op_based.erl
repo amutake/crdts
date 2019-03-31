@@ -11,7 +11,7 @@
 -export([init/1, handle_cast/2, handle_call/3, handle_info/2, code_change/3, terminate/2]).
 
 %% Exported APIs
--export([start_link/4, query/2, update/2, join/2]).
+-export([start_link/3, query/2, update/2, join/2]).
 
 %%====================================================================
 %% Types, Records, and Macros
@@ -38,8 +38,8 @@
 %% Exported APIs
 %%====================================================================
 
-start_link(Name, Module, Interval, Args) ->
-    gen_server:start_link(Name, ?MODULE, {Module, Interval, Args}, []).
+start_link(Name, Module, Args) ->
+    gen_server:start_link(Name, ?MODULE, {Module, Args}, []).
 
 query(ServerRef, Query) ->
     gen_server:call(ServerRef, {query, Query}).
@@ -54,17 +54,17 @@ join(ServerRef, AnotherServerRef) ->
 %% gen_server callback APIs
 %%====================================================================
 
-init({Module, Interval, Args}) ->
+init({Module, Args}) ->
     Payload = Module:init(Args),
     State = #?STATE{module = Module, payload = Payload},
-    erlang:send_after(Interval, self(), broadcast),
     {ok, State}.
 
 handle_cast({update, Args}, State = #?STATE{module = Module, payload = Payload, neighbors = Neighbors}) ->
     % ok = io:format("update: args=~p~n", [Args]),
     FromSrc = Module:handle_update_source(Args, Payload),
     %% reliable broadcast
-    ok = lists:foreach(fun (P) -> update_downstream(P, FromSrc) end, gb_sets:to_list(Neighbors)),
+    ok = lists:foreach(fun (P) -> update_downstream(P, FromSrc) end,
+                       [self() | gb_sets:to_list(Neighbors)]),
     {noreply, State};
 handle_cast({update_downstream, FromSrc}, State = #?STATE{module = Module, payload = Payload0}) ->
     % ok = io:format("merge: payload=~p~n", [RemotePayload]),
