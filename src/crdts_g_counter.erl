@@ -8,7 +8,7 @@
 -behaviour(crdts_state_based).
 
 %% Exported APIs
--export([start_link/2, increment/1, value/1]).
+-export([start_link/3, increment/1, value/1]).
 
 %% crdts_state_based callback APIs
 -export([init/1, handle_query/2, handle_update/2, handle_merge/2]).
@@ -27,8 +27,8 @@
 %% Exported APIs
 %%====================================================================
 
-start_link(Id, NumReplica) ->
-    crdts_state_based:start_link(?MODULE, 1000, {Id, NumReplica}).
+start_link(Name, Id, NumReplica) ->
+    crdts_state_based:start_link(Name, ?MODULE, 1000, {Id, NumReplica}).
 
 increment(ServerRef) ->
     crdts_state_based:update(ServerRef, increment).

@@ -11,7 +11,7 @@
 -export([init/1, handle_cast/2, handle_call/3, handle_info/2]).
 
 %% Exported APIs
--export([start_link/3, query/2, update/2, merge/2, join/2]).
+-export([start_link/4, query/2, update/2, merge/2, join/2]).
 
 %%====================================================================
 %% Types, Records, and Macros
@@ -40,8 +40,8 @@
 %% Exported APIs
 %%====================================================================
 
-start_link(Module, Interval, Args) ->
-    gen_server:start_link(?MODULE, {Module, Interval, Args}, []).
+start_link(Name, Module, Interval, Args) ->
+    gen_server:start_link(Name, ?MODULE, {Module, Interval, Args}, []).
 
 query(ServerRef, Query) ->
     gen_server:call(ServerRef, {query, Query}).
@@ -61,32 +61,41 @@ join(ServerRef, AnotherServerRef) ->
 
 init({Module, Interval, Args}) ->
     Payload = Module:init(Args),
-    State = #?STATE{module = Module, interval = Interval, payload = Payload},
+    State = #?STATE{module = Module, interval = Interval, payload = Payload, last_payload = Payload},
+    erlang:send_after(Interval, self(), broadcast),
     {ok, State}.
 
 handle_cast({update, Args}, State = #?STATE{module = Module, payload = Payload0}) ->
+    % ok = io:format("update: args=~p~n", [Args]),
     Payload1 = Module:handle_update(Args, Payload0),
     {noreply, State#?STATE{payload = Payload1}};
 handle_cast({merge, RemotePayload}, State = #?STATE{module = Module, payload = LocalPayload}) ->
+    % ok = io:format("merge: payload=~p~n", [RemotePayload]),
     Payload = Module:handle_merge(RemotePayload, LocalPayload),
     {noreply, State#?STATE{payload = Payload}};
-handle_cast({join, ServerRef}, State = #?STATE{neighbors = Neighbors0}) ->
+handle_cast({join, ServerRef}, State = #?STATE{neighbors = Neighbors0, payload = Payload}) ->
+    % ok = io:format("join: ref=~p~n", [ServerRef]),
     Neighbors1 = gb_sets:add(ServerRef, Neighbors0),
+    ok = ?MODULE:merge(ServerRef, Payload),
     {noreply, State#?STATE{neighbors = Neighbors1}};
 handle_cast(_Req, _State) ->
     {noreply, _State}.
 
 handle_call({query, Query}, _From, State = #?STATE{module = Module, payload = Payload}) ->
+    % ok = io:format("query: query=~p~n", [Query]),
     Data = Module:handle_query(Query, Payload),
     {reply, Data, State};
 handle_call(_Req, _From, _State) ->
     {noreply, _State}.
 
-handle_info(timeout, State = #?STATE{interval = Interval, payload = Payload, last_payload = Payload}) ->
-    {noreply, State, Interval};
-handle_info(timeout, State = #?STATE{interval = Interval, payload = Payload, neighbors = Neighbors}) ->
-    ok = lists:foreach(fun (P) -> ?MODULE:merge(P, Payload) end, Neighbors),
-    {noreply, State, Interval}.
+handle_info(broadcast, State = #?STATE{interval = Interval, payload = Payload, last_payload = Payload}) ->
+    erlang:send_after(Interval, self(), broadcast),
+    {noreply, State};
+handle_info(broadcast, State = #?STATE{interval = Interval, payload = Payload, neighbors = Neighbors}) ->
+    % ok = io:format("broadcast: payload=~p, neighbors=~p~n", [Payload, Neighbors]),
+    ok = lists:foreach(fun (P) -> ?MODULE:merge(P, Payload) end, gb_sets:to_list(Neighbors)),
+    erlang:send_after(Interval, self(), broadcast),
+    {noreply, State#?STATE{last_payload = Payload}}.
 
 %%====================================================================
 %% Internal functions
