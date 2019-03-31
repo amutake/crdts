@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%% @doc State-based CRDT: CvRDT (Convergent Replicated Data Type)
+%% @doc State-based CRDT: Convergent Replicated Data Type (CvRDT)
 %% @end
 %%%-------------------------------------------------------------------
 
