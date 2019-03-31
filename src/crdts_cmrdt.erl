@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc Op-based CRDT: CmRDT (Commutative Replicated Data Type)
+%% @doc Op-based CRDT: Commutative Replicated Data Type (CmRDT)
 %% @end
 %%%-------------------------------------------------------------------
 
--module(crdts_op_based).
+-module(crdts_cmrdt).
 
 -behaviour(gen_server).
 

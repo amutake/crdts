@@ -5,7 +5,7 @@
 
 -module(crdts_lww_register).
 
--behaviour(crdts_op_based).
+-behaviour(crdts_cmrdt).
 
 %% Exported APIs
 -export([start_link/1, value/1, assign/2]).
@@ -28,13 +28,13 @@
 %%====================================================================
 
 start_link(Name) ->
-    crdts_op_based:start_link(Name, ?MODULE, []).
+    crdts_cmrdt:start_link(Name, ?MODULE, []).
 
 value(ServerRef) ->
-    crdts_op_based:query(ServerRef, value).
+    crdts_cmrdt:query(ServerRef, value).
 
 assign(ServerRef, Value) ->
-    crdts_op_based:update(ServerRef, {assign, Value}).
+    crdts_cmrdt:update(ServerRef, {assign, Value}).
 
 %%====================================================================
 %% crdts_state_based callback APIs

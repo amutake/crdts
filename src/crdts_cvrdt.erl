@@ -3,7 +3,7 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(crdts_state_based).
+-module(crdts_cvrdt).
 
 -behaviour(gen_server).
 
