@@ -49,7 +49,7 @@ handle_query(Query, _Payload) ->
     {unknown_query, Query}.
 
 handle_update_source({assign, Value}, _Payload) ->
-    {assign, Value, erlang:system_time(nanosecond)};
+    {assign, Value, erlang:system_time()};
 handle_update_source(Args, _Payload) ->
     {unknown_update, Args}.
 
