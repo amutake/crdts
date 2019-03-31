@@ -34,7 +34,7 @@
 -callback init(Args::any()) -> payload().
 -callback handle_query(Query::any(), payload()) -> Data::any().
 -callback handle_update(Args::any(), payload()) -> payload().
--callback handle_merge(payload(), payload()) -> payload().
+-callback handle_merge(Remote::payload(), Local::payload()) -> payload().
 
 %%====================================================================
 %% Exported APIs
@@ -67,8 +67,8 @@ init({Module, Interval, Args}) ->
 handle_cast({update, Args}, State = #?STATE{module = Module, payload = Payload0}) ->
     Payload1 = Module:handle_update(Args, Payload0),
     {noreply, State#?STATE{payload = Payload1}};
-handle_cast({merge, PayloadR}, State = #?STATE{module = Module, payload = PayloadL}) ->
-    Payload = Module:handle_merge(PayloadL, PayloadR),
+handle_cast({merge, RemotePayload}, State = #?STATE{module = Module, payload = LocalPayload}) ->
+    Payload = Module:handle_merge(RemotePayload, LocalPayload),
     {noreply, State#?STATE{payload = Payload}};
 handle_cast({join, ServerRef}, State = #?STATE{neighbors = Neighbors0}) ->
     Neighbors1 = gb_sets:add(ServerRef, Neighbors0),
