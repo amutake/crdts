@@ -31,8 +31,8 @@
 
 -callback init(Args::any()) -> payload().
 -callback handle_query(Query::any(), payload()) -> Data::any().
--callback handle_update_source(Args::any(), payload()) -> ToDown::any().
--callback handle_update_downstream(FromSrc::any(), payload()) -> payload().
+-callback handle_prepare_update(Args::any(), payload()) -> ToDown::any().
+-callback handle_effect_update(FromSrc::any(), payload()) -> payload().
 
 %%====================================================================
 %% Exported APIs
@@ -61,14 +61,13 @@ init({Module, Args}) ->
 
 handle_cast({update, Args}, State = #?STATE{module = Module, payload = Payload, neighbors = Neighbors}) ->
     % ok = io:format("update: args=~p~n", [Args]),
-    FromSrc = Module:handle_update_source(Args, Payload),
-    %% reliable broadcast
-    ok = lists:foreach(fun (P) -> update_downstream(P, FromSrc) end,
-                       [self() | gb_sets:to_list(Neighbors)]),
+    FromSrc = Module:handle_prepare_update(Args, Payload),
+    %% causal broadcast
+    ok = causal_broadcast(FromSrc, Neighbors),
     {noreply, State};
-handle_cast({update_downstream, FromSrc}, State = #?STATE{module = Module, payload = Payload0}) ->
+handle_cast({effect_update, FromSrc}, State = #?STATE{module = Module, payload = Payload0}) ->
     % ok = io:format("merge: payload=~p~n", [RemotePayload]),
-    Payload1 = Module:handle_update_downstream(FromSrc, Payload0),
+    Payload1 = Module:handle_effect_update(FromSrc, Payload0),
     {noreply, State#?STATE{payload = Payload1}};
 handle_cast({join, ServerRef}, State = #?STATE{neighbors = Neighbors0}) ->
     % ok = io:format("join: ref=~p~n", [ServerRef]),
@@ -97,5 +96,10 @@ terminate(_Reason, _State) -> ok.
 %% Internal functions
 %%====================================================================
 
-update_downstream(ServerRef, FromSrc) ->
-    gen_server:cast(ServerRef, {update_downstream, FromSrc}).
+%% TODO: causal broadcast
+causal_broadcast(FromSrc, Neighbors) ->
+    lists:foreach(fun (P) -> effect_update(P, FromSrc) end,
+                  [self() | gb_sets:to_list(Neighbors)]).
+
+effect_update(ServerRef, FromSrc) ->
+    gen_server:cast(ServerRef, {effect_update, FromSrc}).

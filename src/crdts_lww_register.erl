@@ -11,7 +11,7 @@
 -export([start_link/1, value/1, assign/2]).
 
 %% crdts_state_based callback APIs
--export([init/1, handle_query/2, handle_update_source/2, handle_update_downstream/2]).
+-export([init/1, handle_query/2, handle_prepare_update/2, handle_effect_update/2]).
 
 %%====================================================================
 %% Types, Records, and Macros
@@ -48,16 +48,16 @@ handle_query(value, #?PAYLOAD{value = Value}) ->
 handle_query(Query, _Payload) ->
     {unknown_query, Query}.
 
-handle_update_source({assign, Value}, _Payload) ->
+handle_prepare_update({assign, Value}, _Payload) ->
     {assign, Value, erlang:system_time()};
-handle_update_source(Args, _Payload) ->
+handle_prepare_update(Args, _Payload) ->
     {unknown_update, Args}.
 
-handle_update_downstream({assign, Value, T1}, Payload = #?PAYLOAD{timestamp = T0}) when T1 > T0 ->
+handle_effect_update({assign, Value, T1}, Payload = #?PAYLOAD{timestamp = T0}) when T1 > T0 ->
     Payload#?PAYLOAD{value = Value, timestamp = T1};
-handle_update_downstream({assign, _, _}, Payload) ->
+handle_effect_update({assign, _, _}, Payload) ->
     Payload;
-handle_update_downstream(_Args, Payload) ->
+handle_effect_update(_Args, Payload) ->
     Payload.
 
 %%====================================================================
